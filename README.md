@@ -31,6 +31,17 @@
 - 科目 2：大數據處理分析與應用
 - 科目 3：機器學習技術與應用
 
+## 🌐 線上答題練習
+
+本 repo 內附純前端答題練習網站（`web/`），可部署於 GitHub Pages：
+
+- 多科目題庫（初級 / 中級各科）
+- 四種模式：逐題練習、模擬考、隨機抽題、錯題複習
+- localStorage 自動存進度與錯題本
+- 可選搭配 Google Apps Script 將作答結果集中至 Google Sheet
+
+部署說明見 [`web/README_deploy.md`](web/README_deploy.md)。
+
 ## 🔗 參考資源
 
 詳見 [`考古題資料/資源清單.md`](考古題資料/資源清單.md)。

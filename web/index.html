@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iPAS AI 應用規劃師 — 答題練習</title>
+<style>
+  :root {
+    --bg: #f4f6f9; --card: #fff; --border: #e0e4ea;
+    --accent: #2563eb; --accent-light: #eff6ff;
+    --ok: #16a34a; --ok-bg: #f0fdf4;
+    --ng: #dc2626; --ng-bg: #fef2f2;
+    --text: #1e293b; --muted: #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", sans-serif;
+         background: var(--bg); color: var(--text); min-height: 100vh; padding: 1rem; }
+  .container { max-width: 860px; margin: 0 auto; }
+  .view { display: none; }
+
+  h1 { font-size: 1.6rem; margin-bottom: .3rem; }
+  .subtitle { color: var(--muted); margin-bottom: 1.5rem; font-size: .95rem; }
+
+  .card { background: var(--card); border-radius: 12px; padding: 1.25rem 1.5rem;
+          box-shadow: 0 1px 4px rgba(0,0,0,.06); margin-bottom: 1rem; }
+  .card h2 { font-size: .85rem; font-weight: 700; text-transform: uppercase;
+             letter-spacing: .06em; color: var(--muted); margin-bottom: .8rem; }
+
+  label.field { display: block; font-size: .85rem; color: var(--muted);
+                font-weight: 600; margin-bottom: .35rem; }
+  input[type=text], select {
+    width: 100%; padding: .6rem .8rem; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 1rem; background: var(--card);
+    margin-bottom: .8rem;
+  }
+
+  .pack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .8rem; }
+  .pack-card { padding: 1rem; border: 1px solid var(--border); border-radius: 8px;
+               cursor: pointer; transition: all .15s; background: #fafbfc; }
+  .pack-card:hover { border-color: var(--accent); background: var(--accent-light); }
+  .pack-level { display: inline-block; padding: .15rem .55rem; background: var(--accent);
+                color: #fff; border-radius: 99px; font-size: .7rem; font-weight: 600; margin-bottom: .5rem; }
+  .pack-subject { font-size: .95rem; font-weight: 600; }
+
+  .stats-bar { font-size: .9rem; color: var(--muted); padding: .6rem 1rem;
+               background: var(--accent-light); border-radius: 8px; margin-bottom: 1rem; }
+  .stats-bar b { color: var(--accent); }
+
+  .btn { padding: .55rem 1.1rem; border-radius: 6px; font-size: .95rem;
+         font-weight: 600; cursor: pointer; border: 1px solid var(--border);
+         background: var(--card); color: var(--text); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-ghost { background: transparent; }
+  .btn-danger { color: var(--ng); border-color: #fecaca; }
+
+  /* Quiz */
+  .top-bar { display: flex; justify-content: space-between; align-items: center;
+             padding: .6rem 1rem; background: var(--card); border-radius: 10px;
+             margin-bottom: 1rem; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+  .progress-text { font-size: .85rem; color: var(--muted); }
+  .progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: .5rem; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .3s; }
+
+  .qid { font-size: .75rem; color: var(--muted); letter-spacing: .05em; }
+  .qtext { font-size: 1.1rem; line-height: 1.6; margin: .4rem 0 .8rem; font-weight: 500; }
+  .qhint { font-size: .8rem; color: var(--accent); margin-bottom: .8rem; }
+  .tag { display: inline-block; padding: .1rem .5rem; background: #f1f5f9;
+         color: var(--muted); border-radius: 99px; font-size: .7rem; margin-right: .3rem; }
+
+  .opt { display: flex; align-items: flex-start; gap: .6rem; padding: .7rem .9rem;
+         border: 1px solid var(--border); border-radius: 8px; margin-bottom: .5rem;
+         cursor: pointer; transition: all .1s; background: var(--card); }
+  .opt:hover { border-color: var(--accent); background: var(--accent-light); }
+  .opt input { margin-top: .25rem; flex-shrink: 0; }
+
+  .feedback { padding: 1rem; border-radius: 8px; margin: 1rem 0; }
+  .feedback.ok { background: var(--ok-bg); border: 1px solid #bbf7d0; }
+  .feedback.ng { background: var(--ng-bg); border: 1px solid #fecaca; }
+  .fb-title { font-weight: 700; font-size: 1rem; margin-bottom: .4rem; }
+  .feedback.ok .fb-title { color: var(--ok); }
+  .feedback.ng .fb-title { color: var(--ng); }
+  .fb-ans { font-size: .9rem; margin-bottom: .4rem; }
+  .fb-exp { font-size: .9rem; color: var(--muted); line-height: 1.5; }
+
+  .actions { display: flex; gap: .6rem; justify-content: flex-end; }
+
+  .result-score { font-size: 2.5rem; font-weight: 700; color: var(--accent); text-align: center; }
+  .result-time { text-align: center; color: var(--muted); margin: .4rem 0 1.2rem; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ===== Home ===== -->
+  <div id="home-view" class="view">
+    <h1>iPAS AI 應用規劃師 — 答題練習</h1>
+    <p class="subtitle">純前端題庫練習；進度自動存於本機，作答結果可同步至 Google Sheet。</p>
+
+    <div id="stats-summary" class="stats-bar"></div>
+
+    <div class="card">
+      <h2>使用者</h2>
+      <label class="field">暱稱 / 編號（用於辨識作答記錄）</label>
+      <input type="text" id="user-input" placeholder="例如 ChaoF" autocomplete="off">
+
+      <label class="field">練習模式</label>
+      <select id="mode-select">
+        <option value="practice">逐題練習（答完立即解析）</option>
+        <option value="exam">模擬考（全部答完才公布）</option>
+        <option value="random">隨機抽 10 題</option>
+        <option value="review">錯題複習（從錯題本抽題）</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <h2>選擇科目</h2>
+      <div id="pack-grid" class="pack-grid"></div>
+    </div>
+
+    <div class="card">
+      <h2>其他</h2>
+      <button class="btn btn-danger" id="clear-mistakes">清空錯題本</button>
+    </div>
+  </div>
+
+  <!-- ===== Quiz ===== -->
+  <div id="quiz-view" class="view">
+    <div class="top-bar">
+      <button class="btn btn-ghost" id="back-home">← 回首頁</button>
+      <div class="progress-text">進度 <span id="progress"></span></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+
+    <div class="card" style="margin-top:1rem;">
+      <div class="qid" id="q-id"></div>
+      <div class="qtext" id="q-text"></div>
+      <div id="q-tags"></div>
+      <div class="qhint" id="q-type-hint"></div>
+      <div id="options"></div>
+      <div id="feedback" class="feedback" style="display:none;"></div>
+      <div class="actions">
+        <button class="btn btn-primary" id="submit-btn">送出答案</button>
+        <button class="btn btn-primary" id="next-btn" style="display:none;">下一題 →</button>
+      </div>
+    </div>
+    <p class="subtitle" style="text-align:center; font-size:.8rem;">
+      快捷鍵：數字鍵 1–9 選答案、Enter 送出/下一題
+    </p>
+  </div>
+
+  <!-- ===== Result ===== -->
+  <div id="result-view" class="view">
+    <div class="card">
+      <h2>本次成績</h2>
+      <div class="result-score" id="result-score"></div>
+      <div class="result-time" id="result-time"></div>
+      <div class="actions" style="justify-content:center;">
+        <button class="btn btn-primary" id="back-home-2">回首頁</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 題庫 manifest 與主程式 -->
+<script src="js/data/manifest.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
