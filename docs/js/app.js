@@ -88,7 +88,28 @@ function showView(id) {
 }
 
 // ===== 首頁 =====
+let currentStudyDay = 1;
+
 function renderHome() {
+  // 五日備考計畫
+  const dayGrid = document.getElementById("day-grid");
+  if (dayGrid && window.STUDY_PLAN) {
+    dayGrid.innerHTML = "";
+    const dayColors = ["#2563eb", "#7c3aed", "#db2777", "#ea580c", "#16a34a"];
+    window.STUDY_PLAN.forEach((d, i) => {
+      const card = document.createElement("div");
+      card.className = "pack-card";
+      card.style.borderLeft = `4px solid ${dayColors[i % dayColors.length]}`;
+      card.innerHTML = `
+        <div class="pack-level" style="background:${dayColors[i % dayColors.length]};">Day ${d.day}</div>
+        <div class="pack-subject" style="font-size:.92rem;">${d.title}</div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem;">${d.content.length} 字</div>
+      `;
+      card.onclick = () => openStudy(d.day);
+      dayGrid.appendChild(card);
+    });
+  }
+
   const grid = document.getElementById("pack-grid");
   grid.innerHTML = "";
   QUIZ_PACKS.filter(p => !p.hidden).forEach(p => {
@@ -293,6 +314,21 @@ function postToSheet(record) {
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(record),
   }).catch(e => console.warn("Sync failed:", e));
+}
+
+// ===== 五日備考計畫 =====
+function openStudy(day) {
+  const plan = window.STUDY_PLAN || [];
+  const item = plan.find(d => d.day === day);
+  if (!item) return;
+  currentStudyDay = day;
+  document.getElementById("study-day-label").textContent = `Day ${item.day} / ${plan.length}`;
+  document.getElementById("study-title").textContent = `Day ${item.day} — ${item.title}`;
+  document.getElementById("study-content").textContent = item.content;
+  document.getElementById("study-prev").disabled = day <= 1;
+  document.getElementById("study-next").disabled = day >= plan.length;
+  showView("study-view");
+  window.scrollTo(0, 0);
 }
 
 // ===== Leaderboard =====
@@ -508,6 +544,9 @@ window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("tab-users").onclick = () => { lbTab = "users"; renderLbTab(); };
   document.getElementById("tab-questions").onclick = () => { lbTab = "questions"; renderLbTab(); };
   document.getElementById("refresh-lb").onclick = openLeaderboard;
+  document.getElementById("back-home-5").onclick = () => { renderHome(); showView("home-view"); };
+  document.getElementById("study-prev").onclick = () => openStudy(currentStudyDay - 1);
+  document.getElementById("study-next").onclick = () => openStudy(currentStudyDay + 1);
   document.getElementById("modal-close").onclick = closeQuestionModal;
   document.getElementById("question-modal").onclick = (e) => {
     if (e.target.id === "question-modal") closeQuestionModal();
