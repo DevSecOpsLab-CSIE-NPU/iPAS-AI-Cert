@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# PDF 教材與考古題（版權考量，不上傳）
+*.pdf
+
+# 外部 clone 的 repo（非本專案內容）
+iPAS_AI_下載資料/github_*/
+
+# 編輯器
+.vscode/
+.idea/
+*.swp
