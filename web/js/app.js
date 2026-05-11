@@ -19,6 +19,19 @@ let state = {
 };
 
 let history = loadHistory();  // 所有歷史紀錄
+let cardState = { user: "", packId: "", cards: [], index: 0 };
+
+function renderCard() {
+  const c = cardState.cards[cardState.index];
+  if (!c) return;
+  document.getElementById("card-progress").textContent = `${cardState.index + 1} / ${cardState.cards.length}`;
+  document.getElementById("card-progress-fill").style.width = `${(cardState.index + 1) / cardState.cards.length * 100}%`;
+  document.getElementById("card-title").textContent = c.title;
+  document.getElementById("card-content").textContent = c.content;
+  document.getElementById("card-source").textContent = c.source || "";
+}
+function cardNext() { if (cardState.index < cardState.cards.length - 1) { cardState.index++; renderCard(); } }
+function cardPrev() { if (cardState.index > 0) { cardState.index--; renderCard(); } }
 
 // ===== localStorage =====
 function loadHistory() {
@@ -37,6 +50,19 @@ function loadPack(packId) {
     s.src = `js/data/${pack.file}`;
     s.onload = () => resolve(window.QUIZ_DATA[packId] || []);
     s.onerror = () => reject("載入失敗：" + pack.file);
+    document.head.appendChild(s);
+  });
+}
+
+function loadCards(packId) {
+  return new Promise((resolve, reject) => {
+    if (window.REVIEW_CARDS[packId]) return resolve(window.REVIEW_CARDS[packId]);
+    const pack = QUIZ_PACKS.find(p => p.id === packId);
+    if (!pack || !pack.cards) return resolve([]);
+    const s = document.createElement("script");
+    s.src = `js/data/${pack.cards}`;
+    s.onload = () => resolve(window.REVIEW_CARDS[packId] || []);
+    s.onerror = () => resolve([]);
     document.head.appendChild(s);
   });
 }
@@ -77,6 +103,16 @@ function computeStats() {
 async function startQuiz(packId, mode) {
   const user = document.getElementById("user-input").value.trim();
   if (!user) { alert("請先輸入暱稱/編號"); return; }
+
+  // 重點瀏覽模式：載入 review cards 後切換到卡片視圖
+  if (mode === "cards") {
+    const cards = await loadCards(packId);
+    if (!cards.length) { alert("該科目沒有重點卡片"); return; }
+    cardState = { user, packId, cards, index: 0 };
+    showView("card-view");
+    renderCard();
+    return;
+  }
 
   let questions;
   if (mode === "review") {
@@ -243,20 +279,29 @@ window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("next-btn").onclick = nextQuestion;
   document.getElementById("back-home").onclick = () => { renderHome(); showView("home-view"); };
   document.getElementById("back-home-2").onclick = () => { renderHome(); showView("home-view"); };
+  document.getElementById("back-home-3").onclick = () => { renderHome(); showView("home-view"); };
+  document.getElementById("card-next").onclick = cardNext;
+  document.getElementById("card-prev").onclick = cardPrev;
   document.getElementById("clear-mistakes").onclick = () => {
     if (confirm("確定清空錯題本？")) { history.mistakes = {}; saveHistory(); renderHome(); }
   };
 
   // 鍵盤快捷鍵
   document.addEventListener("keydown", (e) => {
-    if (document.getElementById("quiz-view").style.display !== "block") return;
-    const submitVisible = document.getElementById("submit-btn").style.display !== "none";
-    if (/^[1-9]$/.test(e.key)) {
-      const idx = parseInt(e.key) - 1;
-      const inp = document.querySelector(`input[name="opt"][value="${idx}"]`);
-      if (inp) { inp.checked = inp.type === "radio" ? true : !inp.checked; }
-    } else if (e.key === "Enter") {
-      if (submitVisible) submitAnswer(); else nextQuestion();
+    const inQuiz = document.getElementById("quiz-view").style.display === "block";
+    const inCard = document.getElementById("card-view").style.display === "block";
+    if (inQuiz) {
+      const submitVisible = document.getElementById("submit-btn").style.display !== "none";
+      if (/^[1-9]$/.test(e.key)) {
+        const idx = parseInt(e.key) - 1;
+        const inp = document.querySelector(`input[name="opt"][value="${idx}"]`);
+        if (inp) { inp.checked = inp.type === "radio" ? true : !inp.checked; }
+      } else if (e.key === "Enter") {
+        if (submitVisible) submitAnswer(); else nextQuestion();
+      }
+    } else if (inCard) {
+      if (e.key === "ArrowRight" || e.key === " " || e.key === "Enter") { e.preventDefault(); cardNext(); }
+      else if (e.key === "ArrowLeft") { cardPrev(); }
     }
   });
 });

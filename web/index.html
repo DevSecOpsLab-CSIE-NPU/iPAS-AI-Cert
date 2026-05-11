@@ -110,6 +110,7 @@
         <option value="exam">模擬考（全部答完才公布）</option>
         <option value="random">隨機抽 10 題</option>
         <option value="review">錯題複習（從錯題本抽題）</option>
+        <option value="cards">重點瀏覽（社群回憶版考點卡片）</option>
       </select>
     </div>
 
@@ -146,6 +147,28 @@
     </div>
     <p class="subtitle" style="text-align:center; font-size:.8rem;">
       快捷鍵：數字鍵 1–9 選答案、Enter 送出/下一題
+    </p>
+  </div>
+
+  <!-- ===== Review Cards ===== -->
+  <div id="card-view" class="view">
+    <div class="top-bar">
+      <button class="btn btn-ghost" id="back-home-3">← 回首頁</button>
+      <div class="progress-text">卡片 <span id="card-progress"></span></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="card-progress-fill"></div></div>
+
+    <div class="card" style="margin-top:1rem; min-height: 200px;">
+      <div class="qid" id="card-source"></div>
+      <h3 id="card-title" style="font-size: 1.25rem; margin: .5rem 0 .8rem; color: var(--accent);"></h3>
+      <p id="card-content" style="font-size: 1rem; line-height: 1.7; color: var(--text);"></p>
+    </div>
+    <div class="actions" style="justify-content:space-between;">
+      <button class="btn" id="card-prev">← 上一張</button>
+      <button class="btn btn-primary" id="card-next">下一張 →</button>
+    </div>
+    <p class="subtitle" style="text-align:center; font-size:.8rem; margin-top:.6rem;">
+      快捷鍵：← → 切換、Space/Enter 下一張
     </p>
   </div>
 
