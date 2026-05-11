@@ -108,10 +108,13 @@
       <select id="mode-select">
         <option value="practice">逐題練習（答完立即解析）</option>
         <option value="exam">模擬考（全部答完才公布）</option>
-        <option value="random">隨機抽 10 題</option>
+        <option value="random">隨機抽題</option>
         <option value="review">錯題複習（從錯題本抽題）</option>
         <option value="cards">重點瀏覽（社群回憶版考點卡片）</option>
       </select>
+
+      <label class="field">每次題數（留空＝該科全部；隨機與模擬考會依此抽取上限）</label>
+      <input type="number" id="qcount-input" min="1" placeholder="例如 50（官方考卷題數）" autocomplete="off">
     </div>
 
     <div class="card">

@@ -94,8 +94,10 @@ function renderHome() {
   QUIZ_PACKS.forEach(p => {
     const card = document.createElement("div");
     card.className = "pack-card";
+    const filesCount = 1 + (p.extras?.length || 0);
     card.innerHTML = `
       <div class="pack-level">${p.level}</div>
+      <div style="font-size:.7rem;color:var(--muted);margin-bottom:.3rem;">${filesCount} 個題庫檔</div>
       <div class="pack-subject">${p.subject}</div>
     `;
     card.onclick = () => startQuiz(p.id, document.getElementById("mode-select").value);
@@ -128,14 +130,27 @@ async function startQuiz(packId, mode) {
     return;
   }
 
+  // 使用者指定每次題數（留空＝該科全部）
+  const qcountRaw = document.getElementById("qcount-input").value.trim();
+  const qcount = qcountRaw ? Math.max(1, parseInt(qcountRaw)) : null;
+
   let questions;
   if (mode === "review") {
     // 錯題複習：從所有 pack 拉錯題
     questions = await collectMistakes();
     if (questions.length === 0) { alert("目前沒有錯題"); return; }
+    if (qcount) questions = shuffle([...questions]).slice(0, Math.min(qcount, questions.length));
   } else {
     questions = await loadPack(packId);
-    if (mode === "random") questions = shuffle([...questions]).slice(0, Math.min(10, questions.length));
+    if (mode === "random") {
+      const n = qcount || questions.length;
+      questions = shuffle([...questions]).slice(0, Math.min(n, questions.length));
+    } else if (mode === "exam") {
+      // 模擬考可選擇抽指定題數做為一份試卷
+      if (qcount) questions = shuffle([...questions]).slice(0, Math.min(qcount, questions.length));
+    } else if (mode === "practice" && qcount) {
+      questions = questions.slice(0, Math.min(qcount, questions.length));
+    }
   }
 
   state = {
