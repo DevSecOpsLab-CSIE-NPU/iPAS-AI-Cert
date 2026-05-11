@@ -96,18 +96,29 @@ function renderHome() {
   if (dayGrid && window.STUDY_PLAN) {
     dayGrid.innerHTML = "";
     const dayColors = ["#2563eb", "#7c3aed", "#db2777", "#ea580c", "#16a34a"];
+    const dayIdx = window.DAY_INDEX || {};
     window.STUDY_PLAN.forEach((d, i) => {
       const card = document.createElement("div");
       card.className = "pack-card";
-      card.style.borderLeft = `4px solid ${dayColors[i % dayColors.length]}`;
+      const color = dayColors[i % dayColors.length];
+      card.style.borderLeft = `4px solid ${color}`;
+      card.style.cursor = "default";
+      const qCount = (dayIdx[d.day] || dayIdx[String(d.day)] || []).length;
       card.innerHTML = `
-        <div class="pack-level" style="background:${dayColors[i % dayColors.length]};">Day ${d.day}</div>
+        <div class="pack-level" style="background:${color};">Day ${d.day}</div>
         <div class="pack-subject" style="font-size:.92rem;">${d.title}</div>
-        <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem;">${d.content.length} 字</div>
+        <div style="font-size:.72rem;color:var(--muted);margin:.3rem 0 .6rem;">${d.content.length} 字 · ${qCount} 題對應</div>
+        <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
+          <button class="btn" data-day-read="${d.day}" style="font-size:.78rem;padding:.3rem .6rem;">📖 閱讀</button>
+          <button class="btn btn-primary" data-day-quiz="${d.day}" style="font-size:.78rem;padding:.3rem .6rem;">📝 練習測驗</button>
+        </div>
       `;
-      card.onclick = () => openStudy(d.day);
       dayGrid.appendChild(card);
     });
+    dayGrid.querySelectorAll("[data-day-read]").forEach(b =>
+      b.onclick = (e) => { e.stopPropagation(); openStudy(parseInt(b.dataset.dayRead)); });
+    dayGrid.querySelectorAll("[data-day-quiz]").forEach(b =>
+      b.onclick = (e) => { e.stopPropagation(); startDayQuiz(parseInt(b.dataset.dayQuiz)); });
   }
 
   const grid = document.getElementById("pack-grid");
@@ -317,6 +328,47 @@ function postToSheet(record) {
 }
 
 // ===== 五日備考計畫 =====
+async function loadAllPacks() {
+  await Promise.all(QUIZ_PACKS.map(p => loadPack(p.id).catch(() => null)));
+}
+
+function findQuestionGlobal(qid) {
+  for (const pid of Object.keys(window.QUIZ_DATA)) {
+    const arr = window.QUIZ_DATA[pid];
+    if (!Array.isArray(arr)) continue;
+    const q = arr.find(x => x && x.id === qid);
+    if (q) return { pack: pid, q };
+  }
+  return null;
+}
+
+async function startDayQuiz(day) {
+  const user = document.getElementById("user-input").value.trim();
+  if (!user) { alert("請先輸入暱稱/編號"); return; }
+  const idx = window.DAY_INDEX || {};
+  const qids = idx[day] || idx[String(day)] || [];
+  if (!qids.length) { alert(`Day ${day} 沒有對應題目`); return; }
+
+  await loadAllPacks();
+  let questions = qids.map(qid => findQuestionGlobal(qid)?.q).filter(Boolean);
+
+  const qcountRaw = document.getElementById("qcount-input").value.trim();
+  const qcount = qcountRaw ? Math.max(1, parseInt(qcountRaw)) : null;
+  questions = shuffle([...questions]);
+  if (qcount) questions = questions.slice(0, Math.min(qcount, questions.length));
+
+  let mode = document.getElementById("mode-select").value;
+  if (mode === "review" || mode === "cards") mode = "practice";
+
+  state = {
+    user, packId: `DAY_${day}`, mode,
+    questions, index: 0, answers: {},
+    startedAt: Date.now(),
+  };
+  showView("quiz-view");
+  renderQuestion();
+}
+
 function openStudy(day) {
   const plan = window.STUDY_PLAN || [];
   const item = plan.find(d => d.day === day);
@@ -432,6 +484,11 @@ function renderQuestionBoard(rows) {
   const sortedHigh = [...list].filter(q => q.attempts >= 1).sort((a, b) => b.acc - a.acc).slice(0, 20);
 
   const packLabel = (pid) => {
+    if (pid && pid.startsWith("DAY_")) {
+      const day = pid.slice(4);
+      const plan = (window.STUDY_PLAN || []).find(d => String(d.day) === day);
+      return plan ? `Day ${day}・${plan.title}` : `Day ${day}`;
+    }
     const p = QUIZ_PACKS.find(x => x.id === pid);
     return p ? `${p.level}・${p.subject.replace(/^科目\d+：/, '')}` : (pid || "");
   };
@@ -476,8 +533,15 @@ async function openQuestionModal(qid, packId) {
 
   let q = null;
   try {
-    const arr = await loadPack(packId);
-    q = arr.find(x => x.id === qid);
+    if (packId && !packId.startsWith("DAY_")) {
+      const arr = await loadPack(packId);
+      q = arr.find(x => x.id === qid);
+    }
+    if (!q) {
+      // DAY_X 或找不到 → 全載再全找
+      await loadAllPacks();
+      q = findQuestionGlobal(qid)?.q || null;
+    }
   } catch (e) { /* ignore */ }
 
   if (!q) {
