@@ -41,17 +41,31 @@ function loadHistory() {
 function saveHistory() { localStorage.setItem(LS_KEY, JSON.stringify(history)); }
 
 // ===== 載入題庫 =====
-function loadPack(packId) {
+function loadScript(src) {
   return new Promise((resolve, reject) => {
-    if (window.QUIZ_DATA[packId]) return resolve(window.QUIZ_DATA[packId]);
-    const pack = QUIZ_PACKS.find(p => p.id === packId);
-    if (!pack) return reject("找不到題庫");
     const s = document.createElement("script");
-    s.src = `js/data/${pack.file}`;
-    s.onload = () => resolve(window.QUIZ_DATA[packId] || []);
-    s.onerror = () => reject("載入失敗：" + pack.file);
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => reject("載入失敗：" + src);
     document.head.appendChild(s);
   });
+}
+
+async function loadPack(packId) {
+  if (window.QUIZ_DATA[packId] && window.QUIZ_DATA[packId].__loaded) {
+    return window.QUIZ_DATA[packId];
+  }
+  const pack = QUIZ_PACKS.find(p => p.id === packId);
+  if (!pack) throw new Error("找不到題庫");
+  // 載入主檔
+  await loadScript(`js/data/${pack.file}`);
+  // 載入額外題庫
+  if (pack.extras && pack.extras.length) {
+    await Promise.all(pack.extras.map(f => loadScript(`js/data/${f}`)));
+  }
+  const arr = window.QUIZ_DATA[packId] || [];
+  arr.__loaded = true;
+  return arr;
 }
 
 function loadCards(packId) {
