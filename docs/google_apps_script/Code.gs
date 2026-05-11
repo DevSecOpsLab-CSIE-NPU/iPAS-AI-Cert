@@ -9,7 +9,7 @@
  *  4. Deploy → New deployment → Web App
  *     - Execute as: Me
  *     - Who has access: Anyone
- *  5. 複製產生的 Web App URL，貼回 web/js/app.js 的 APPS_SCRIPT_URL
+ *  5. 複製產生的 Web App URL，貼回 docs/js/app.js 的 APPS_SCRIPT_URL
  */
 
 const SPREADSHEET_ID = "YOUR_SPREADSHEET_ID_HERE";

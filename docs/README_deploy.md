@@ -23,7 +23,7 @@
 題庫資料用 `<script>` 標籤載入（避免 `file://` 的 CORS 限制），請用簡易 HTTP server：
 
 ```bash
-cd web/
+cd docs/
 python3 -m http.server 8000
 # 開 http://localhost:8000
 ```
@@ -51,7 +51,7 @@ python3 -m http.server 8000
 
 ## Step 3：設定前端
 
-打開 `web/js/app.js`，把第 7 行改成 Step 2 的 URL：
+打開 `docs/js/app.js`，把第 7 行改成 Step 2 的 URL：
 
 ```javascript
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycb.../exec";
@@ -65,8 +65,8 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycb.../exec";
 - **Source**: Deploy from a branch
 - **Branch**: `main` / 資料夾選 `/web` 或 `/(root)`
 
-若選 `/(root)`，須把 `web/` 內容移到 repo 根目錄，或建立軟連結。
-推薦做法：用 GitHub Actions 把 `web/` 內容部署到 `gh-pages` 分支。
+若選 `/(root)`，須把 `docs/` 內容移到 repo 根目錄，或建立軟連結。
+推薦做法：用 GitHub Actions 把 `docs/` 內容部署到 `gh-pages` 分支。
 
 部署完成後 URL：
 ```
@@ -107,8 +107,8 @@ window.QUIZ_DATA["L1_S1"] = [
 ```
 
 新增題庫：
-1. 在 `web/js/data/` 加新檔案
-2. 在 `web/js/data/manifest.js` 註冊
+1. 在 `docs/js/data/` 加新檔案
+2. 在 `docs/js/data/manifest.js` 註冊
 
 ---
 

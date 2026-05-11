@@ -33,14 +33,14 @@
 
 ## 🌐 線上答題練習
 
-本 repo 內附純前端答題練習網站（`web/`），可部署於 GitHub Pages：
+本 repo 內附純前端答題練習網站（`docs/`），可部署於 GitHub Pages：
 
 - 多科目題庫（初級 / 中級各科）
 - 四種模式：逐題練習、模擬考、隨機抽題、錯題複習
 - localStorage 自動存進度與錯題本
 - 可選搭配 Google Apps Script 將作答結果集中至 Google Sheet
 
-部署說明見 [`web/README_deploy.md`](web/README_deploy.md)。
+部署說明見 [`docs/README_deploy.md`](docs/README_deploy.md)。
 
 ## 🔗 參考資源
 
