@@ -43,20 +43,31 @@ function doPost(e) {
 }
 
 function doGet(e) {
-  // 簡易進度查詢：?user=XXX
+  // 查詢：?user=XXX 篩特定使用者；?details=1 連同每題作答細節也回傳
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = ss.getSheetByName(SHEET_NAME);
-  if (!sheet) return ContentService.createTextOutput(JSON.stringify({ count: 0, rows: [] }))
-    .setMimeType(ContentService.MimeType.JSON);
+  if (!sheet) return _json({ count: 0, rows: [] });
   const rows = sheet.getDataRange().getValues();
   const user = e.parameter.user;
+  const withDetails = e.parameter.details === "1";
   const filtered = user ? rows.slice(1).filter(r => r[1] === user) : rows.slice(1);
-  return ContentService.createTextOutput(JSON.stringify({
+  return _json({
     user: user || "ALL",
     count: filtered.length,
-    rows: filtered.map(r => ({
-      timestamp: r[0], user: r[1], packId: r[2], mode: r[3],
-      total: r[4], correct: r[5], durationSec: r[6],
-    })),
-  })).setMimeType(ContentService.MimeType.JSON);
+    rows: filtered.map(r => {
+      const base = {
+        timestamp: r[0], user: r[1], packId: r[2], mode: r[3],
+        total: r[4], correct: r[5], durationSec: r[6],
+      };
+      if (withDetails) {
+        try { base.detail = JSON.parse(r[7] || "[]"); } catch (e) { base.detail = []; }
+      }
+      return base;
+    }),
+  });
+}
+
+function _json(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
 }

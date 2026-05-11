@@ -295,6 +295,135 @@ function postToSheet(record) {
   }).catch(e => console.warn("Sync failed:", e));
 }
 
+// ===== Leaderboard =====
+let lbTab = "users";
+
+async function openLeaderboard() {
+  showView("leaderboard-view");
+  document.getElementById("lb-loading").style.display = "block";
+  document.getElementById("lb-content").innerHTML = "";
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + "?details=1");
+    const data = await res.json();
+    document.getElementById("lb-meta").textContent = `共 ${data.count} 筆作答`;
+    window._lbRows = data.rows || [];
+    renderLbTab();
+  } catch (e) {
+    document.getElementById("lb-content").innerHTML = `<p style="color:var(--ng);">載入失敗：${e.message}</p>`;
+  } finally {
+    document.getElementById("lb-loading").style.display = "none";
+  }
+}
+
+function renderLbTab() {
+  const rows = window._lbRows || [];
+  document.getElementById("tab-users").classList.toggle("btn-primary", lbTab === "users");
+  document.getElementById("tab-questions").classList.toggle("btn-primary", lbTab === "questions");
+  if (lbTab === "users") renderUserBoard(rows);
+  else renderQuestionBoard(rows);
+}
+
+function renderUserBoard(rows) {
+  // 依使用者聚合
+  const agg = {};
+  rows.forEach(r => {
+    const u = r.user || "(空)";
+    if (!agg[u]) agg[u] = { user: u, sessions: 0, total: 0, correct: 0, lastTs: "" };
+    agg[u].sessions++;
+    agg[u].total += Number(r.total) || 0;
+    agg[u].correct += Number(r.correct) || 0;
+    if (!agg[u].lastTs || r.timestamp > agg[u].lastTs) agg[u].lastTs = r.timestamp;
+  });
+  const list = Object.values(agg)
+    .filter(a => a.total > 0)
+    .map(a => ({ ...a, acc: a.correct / a.total }))
+    .sort((a, b) => b.acc - a.acc || b.correct - a.correct);
+
+  if (!list.length) {
+    document.getElementById("lb-content").innerHTML = `<p style="color:var(--muted);text-align:center;padding:2rem;">尚無資料</p>`;
+    return;
+  }
+  const html = `
+    <table class="lb">
+      <thead><tr>
+        <th>#</th><th>使用者</th><th>場次</th><th>累積答題</th><th>累積答對</th><th>正確率</th><th>最後作答</th>
+      </tr></thead>
+      <tbody>
+        ${list.map((a, i) => {
+          const accPct = Math.round(a.acc * 100);
+          const cls = accPct >= 80 ? "acc-high" : accPct >= 60 ? "acc-mid" : "acc-low";
+          const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "";
+          return `<tr>
+            <td class="rank rank-${i + 1}">${medal || (i + 1)}</td>
+            <td><b>${escapeHtml(a.user)}</b></td>
+            <td>${a.sessions}</td>
+            <td>${a.total}</td>
+            <td>${a.correct}</td>
+            <td>
+              <span class="acc-bar"><span class="acc-fill ${cls}" style="width:${accPct}%;display:block;"></span></span>
+              ${accPct}%
+            </td>
+            <td style="color:var(--muted);font-size:.8rem;">${fmtTime(a.lastTs)}</td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+  `;
+  document.getElementById("lb-content").innerHTML = html;
+}
+
+function renderQuestionBoard(rows) {
+  // 從 detail 聚合每題正確率
+  const qa = {};
+  rows.forEach(r => {
+    if (!Array.isArray(r.detail)) return;
+    r.detail.forEach(d => {
+      const qid = d.qid;
+      if (!qid) return;
+      if (!qa[qid]) qa[qid] = { qid, attempts: 0, correct: 0, packId: r.packId };
+      qa[qid].attempts++;
+      if (d.correct) qa[qid].correct++;
+    });
+  });
+  const list = Object.values(qa).map(q => ({ ...q, acc: q.attempts ? q.correct / q.attempts : 0 }));
+  if (!list.length) {
+    document.getElementById("lb-content").innerHTML =
+      `<p style="color:var(--muted);text-align:center;padding:2rem;">尚無題目作答資料（需要至少一筆完成記錄含 detail）</p>`;
+    return;
+  }
+  // 兩段：最難（acc 最低）與最易（acc 最高），各取 top 20
+  const sortedLow = [...list].filter(q => q.attempts >= 1).sort((a, b) => a.acc - b.acc).slice(0, 20);
+  const sortedHigh = [...list].filter(q => q.attempts >= 1).sort((a, b) => b.acc - a.acc).slice(0, 20);
+
+  const renderRow = (q, i) => {
+    const accPct = Math.round(q.acc * 100);
+    const cls = accPct >= 80 ? "acc-high" : accPct >= 60 ? "acc-mid" : "acc-low";
+    return `<tr>
+      <td class="rank">${i + 1}</td>
+      <td style="font-family:monospace;font-size:.8rem;">${escapeHtml(q.qid)}</td>
+      <td style="color:var(--muted);font-size:.8rem;">${escapeHtml(q.packId || "")}</td>
+      <td>${q.attempts}</td>
+      <td>${q.correct}</td>
+      <td>
+        <span class="acc-bar"><span class="acc-fill ${cls}" style="width:${accPct}%;display:block;"></span></span>
+        ${accPct}%
+      </td>
+    </tr>`;
+  };
+
+  document.getElementById("lb-content").innerHTML = `
+    <h3 style="font-size:.95rem;margin:.6rem 0 .5rem;color:var(--ng);">😈 最難 Top 20（正確率最低）</h3>
+    <table class="lb"><thead><tr><th>#</th><th>題目 ID</th><th>科目</th><th>嘗試</th><th>答對</th><th>正確率</th></tr></thead>
+      <tbody>${sortedLow.map(renderRow).join("")}</tbody></table>
+    <h3 style="font-size:.95rem;margin:1.2rem 0 .5rem;color:var(--ok);">✨ 最易 Top 20（正確率最高）</h3>
+    <table class="lb"><thead><tr><th>#</th><th>題目 ID</th><th>科目</th><th>嘗試</th><th>答對</th><th>正確率</th></tr></thead>
+      <tbody>${sortedHigh.map(renderRow).join("")}</tbody></table>
+  `;
+}
+
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function fmtTime(s) { if (!s) return ""; try { return new Date(s).toLocaleString("zh-TW", { hour12: false }); } catch { return s; } }
+
 // ===== 初始化 =====
 window.addEventListener("DOMContentLoaded", () => {
   // URL 參數可預填使用者
@@ -314,6 +443,11 @@ window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("clear-mistakes").onclick = () => {
     if (confirm("確定清空錯題本？")) { history.mistakes = {}; saveHistory(); renderHome(); }
   };
+  document.getElementById("open-leaderboard").onclick = openLeaderboard;
+  document.getElementById("back-home-4").onclick = () => { renderHome(); showView("home-view"); };
+  document.getElementById("tab-users").onclick = () => { lbTab = "users"; renderLbTab(); };
+  document.getElementById("tab-questions").onclick = () => { lbTab = "questions"; renderLbTab(); };
+  document.getElementById("refresh-lb").onclick = openLeaderboard;
 
   // 鍵盤快捷鍵
   document.addEventListener("keydown", (e) => {

@@ -87,6 +87,19 @@
 
   .result-score { font-size: 2.5rem; font-weight: 700; color: var(--accent); text-align: center; }
   .result-time { text-align: center; color: var(--muted); margin: .4rem 0 1.2rem; }
+
+  /* Leaderboard */
+  table.lb { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  table.lb th, table.lb td { padding: .5rem .7rem; border-bottom: 1px solid var(--border); text-align: left; }
+  table.lb th { background: #f8fafc; font-weight: 600; font-size: .8rem; color: var(--muted); }
+  table.lb tr:hover { background: #f8fafc; }
+  .rank { font-weight: 700; color: var(--accent); width: 3rem; }
+  .rank-1 { color: #eab308; } .rank-2 { color: #94a3b8; } .rank-3 { color: #b45309; }
+  .acc-bar { display: inline-block; width: 60px; height: 6px; background: var(--border); border-radius: 3px; vertical-align: middle; margin-right: .4rem; overflow: hidden; }
+  .acc-fill { height: 100%; background: var(--accent); }
+  .acc-low { background: var(--ng) !important; }
+  .acc-mid { background: var(--warn, #f59e0b) !important; }
+  .acc-high { background: var(--ok) !important; }
 </style>
 </head>
 <body>
@@ -124,7 +137,25 @@
 
     <div class="card">
       <h2>其他</h2>
+      <button class="btn btn-primary" id="open-leaderboard" style="margin-right:.5rem;">🏆 查看排行榜</button>
       <button class="btn btn-danger" id="clear-mistakes">清空錯題本</button>
+    </div>
+  </div>
+
+  <!-- ===== Leaderboard ===== -->
+  <div id="leaderboard-view" class="view">
+    <div class="top-bar">
+      <button class="btn btn-ghost" id="back-home-4">← 回首頁</button>
+      <div class="progress-text" id="lb-meta"></div>
+    </div>
+    <div class="card" style="margin-top:1rem;">
+      <div style="display:flex;gap:.5rem;margin-bottom:.8rem;">
+        <button class="btn btn-primary" id="tab-users">👤 天梯榜（使用者）</button>
+        <button class="btn" id="tab-questions">🎯 題目熱點榜</button>
+        <button class="btn btn-ghost" id="refresh-lb" style="margin-left:auto;">↻ 重新整理</button>
+      </div>
+      <div id="lb-loading" style="text-align:center;padding:2rem;color:var(--muted);">載入中…</div>
+      <div id="lb-content"></div>
     </div>
   </div>
 
