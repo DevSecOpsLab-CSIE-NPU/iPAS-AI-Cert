@@ -12,7 +12,7 @@
  *  5. 複製產生的 Web App URL，貼回 docs/js/app.js 的 APPS_SCRIPT_URL
  */
 
-const SPREADSHEET_ID = "YOUR_SPREADSHEET_ID_HERE";
+const SPREADSHEET_ID = "1y8yVsmOGgSBNleiZTaT9L5yBnBiV0WjkQUAC9tlF85M";
 const SHEET_NAME = "responses";
 
 function doPost(e) {

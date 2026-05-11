@@ -4,7 +4,7 @@
 
 // ===== 設定 =====
 // 部署後請改成你的 Apps Script Web App URL
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypCFxvTv-vDU6bgfg8w_RPhe7E0WQUyNfuLYqieVSVRItXAJ9ES7EVOlZ0jm2jpkLMHg/exec";
 const LS_KEY = "ipas_quiz_state_v1";
 
 // ===== 狀態 =====
