@@ -395,13 +395,18 @@ function renderQuestionBoard(rows) {
   const sortedLow = [...list].filter(q => q.attempts >= 1).sort((a, b) => a.acc - b.acc).slice(0, 20);
   const sortedHigh = [...list].filter(q => q.attempts >= 1).sort((a, b) => b.acc - a.acc).slice(0, 20);
 
+  const packLabel = (pid) => {
+    const p = QUIZ_PACKS.find(x => x.id === pid);
+    return p ? `${p.level}・${p.subject.replace(/^科目\d+：/, '')}` : (pid || "");
+  };
+
   const renderRow = (q, i) => {
     const accPct = Math.round(q.acc * 100);
     const cls = accPct >= 80 ? "acc-high" : accPct >= 60 ? "acc-mid" : "acc-low";
-    return `<tr>
+    return `<tr class="clickable" data-qid="${escapeHtml(q.qid)}" data-pack="${escapeHtml(q.packId || '')}">
       <td class="rank">${i + 1}</td>
-      <td style="font-family:monospace;font-size:.8rem;">${escapeHtml(q.qid)}</td>
-      <td style="color:var(--muted);font-size:.8rem;">${escapeHtml(q.packId || "")}</td>
+      <td style="font-family:monospace;font-size:.78rem;">${escapeHtml(q.qid)}</td>
+      <td style="font-size:.8rem;">${escapeHtml(packLabel(q.packId))}</td>
       <td>${q.attempts}</td>
       <td>${q.correct}</td>
       <td>
@@ -412,13 +417,68 @@ function renderQuestionBoard(rows) {
   };
 
   document.getElementById("lb-content").innerHTML = `
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:.6rem;">💡 點任一列可查看題目內容與解答</p>
     <h3 style="font-size:.95rem;margin:.6rem 0 .5rem;color:var(--ng);">😈 最難 Top 20（正確率最低）</h3>
-    <table class="lb"><thead><tr><th>#</th><th>題目 ID</th><th>科目</th><th>嘗試</th><th>答對</th><th>正確率</th></tr></thead>
+    <table class="lb"><thead><tr><th>#</th><th>題目 ID</th><th>分類</th><th>嘗試</th><th>答對</th><th>正確率</th></tr></thead>
       <tbody>${sortedLow.map(renderRow).join("")}</tbody></table>
     <h3 style="font-size:.95rem;margin:1.2rem 0 .5rem;color:var(--ok);">✨ 最易 Top 20（正確率最高）</h3>
-    <table class="lb"><thead><tr><th>#</th><th>題目 ID</th><th>科目</th><th>嘗試</th><th>答對</th><th>正確率</th></tr></thead>
+    <table class="lb"><thead><tr><th>#</th><th>題目 ID</th><th>分類</th><th>嘗試</th><th>答對</th><th>正確率</th></tr></thead>
       <tbody>${sortedHigh.map(renderRow).join("")}</tbody></table>
   `;
+
+  // 綁定 row click → modal
+  document.querySelectorAll("#lb-content tr.clickable").forEach(tr => {
+    tr.onclick = () => openQuestionModal(tr.dataset.qid, tr.dataset.pack);
+  });
+}
+
+async function openQuestionModal(qid, packId) {
+  const modal = document.getElementById("question-modal");
+  const body = document.getElementById("modal-body");
+  body.innerHTML = `<p style="color:var(--muted);">載入中…</p>`;
+  modal.classList.add("show");
+
+  let q = null;
+  try {
+    const arr = await loadPack(packId);
+    q = arr.find(x => x.id === qid);
+  } catch (e) { /* ignore */ }
+
+  if (!q) {
+    body.innerHTML = `
+      <h3>${escapeHtml(qid)}</h3>
+      <p style="color:var(--ng);">在題庫中找不到此題（可能已被移除或科目不符）</p>
+    `;
+    return;
+  }
+
+  const typeLabel = q.type === "multiple" ? "複選題" : q.type === "true_false" ? "是非題" : "單選題";
+  const tagsHtml = (q.tags || []).map(t => `<span class="modal-tag">${escapeHtml(t)}</span>`).join("");
+  const optsHtml = q.options.map((opt, i) => {
+    const correct = q.answer.includes(i);
+    const letter = String.fromCharCode(65 + i);
+    return `<div class="modal-opt ${correct ? "correct" : ""}">
+      <b>${letter}.</b> ${escapeHtml(opt)} ${correct ? "✓" : ""}
+    </div>`;
+  }).join("");
+
+  body.innerHTML = `
+    <div class="modal-meta">
+      <span class="modal-tag">${escapeHtml(q.id)}</span>
+      <span class="modal-tag">${escapeHtml(q.source || "")}</span>
+      <span class="modal-tag">${typeLabel}</span>
+      ${tagsHtml}
+    </div>
+    <h3 style="font-size:1.05rem;line-height:1.5;margin-bottom:1rem;">${escapeHtml(q.question)}</h3>
+    ${optsHtml}
+    ${q.explanation ? `<div style="margin-top:1rem;padding:.8rem;background:var(--accent-light);border-radius:6px;font-size:.9rem;line-height:1.5;">
+      <b style="color:var(--accent);">解析：</b>${escapeHtml(q.explanation)}
+    </div>` : `<p style="margin-top:.8rem;color:var(--muted);font-size:.8rem;">（無解析）</p>`}
+  `;
+}
+
+function closeQuestionModal() {
+  document.getElementById("question-modal").classList.remove("show");
 }
 
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
@@ -448,6 +508,10 @@ window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("tab-users").onclick = () => { lbTab = "users"; renderLbTab(); };
   document.getElementById("tab-questions").onclick = () => { lbTab = "questions"; renderLbTab(); };
   document.getElementById("refresh-lb").onclick = openLeaderboard;
+  document.getElementById("modal-close").onclick = closeQuestionModal;
+  document.getElementById("question-modal").onclick = (e) => {
+    if (e.target.id === "question-modal") closeQuestionModal();
+  };
 
   // 鍵盤快捷鍵
   document.addEventListener("keydown", (e) => {
@@ -465,6 +529,9 @@ window.addEventListener("DOMContentLoaded", () => {
     } else if (inCard) {
       if (e.key === "ArrowRight" || e.key === " " || e.key === "Enter") { e.preventDefault(); cardNext(); }
       else if (e.key === "ArrowLeft") { cardPrev(); }
+    }
+    if (e.key === "Escape" && document.getElementById("question-modal").classList.contains("show")) {
+      closeQuestionModal();
     }
   });
 });
