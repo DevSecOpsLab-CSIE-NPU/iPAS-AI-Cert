@@ -91,7 +91,7 @@ function showView(id) {
 function renderHome() {
   const grid = document.getElementById("pack-grid");
   grid.innerHTML = "";
-  QUIZ_PACKS.forEach(p => {
+  QUIZ_PACKS.filter(p => !p.hidden).forEach(p => {
     const card = document.createElement("div");
     card.className = "pack-card";
     const filesCount = 1 + (p.extras?.length || 0);
