@@ -42,7 +42,7 @@
 
 本 repo 內附純前端答題練習網站（`docs/`），可部署於 GitHub Pages：
 
-- 多科目題庫（初級 / 中級各科）
+- 多科目題庫（初級 / 中級各科；含初級 AIoT 物聯網類 597 題歷屆試題）
 - 四種模式：逐題練習、模擬考、隨機抽題、錯題複習
 - localStorage 自動存進度與錯題本
 - 可選搭配 Google Apps Script 將作答結果集中至 Google Sheet
