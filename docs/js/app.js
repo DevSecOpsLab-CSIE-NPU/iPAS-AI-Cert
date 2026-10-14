@@ -104,13 +104,17 @@ function renderHome() {
       card.style.borderLeft = `4px solid ${color}`;
       card.style.cursor = "default";
       const qCount = (dayIdx[d.day] || dayIdx[String(d.day)] || []).length;
+      const countLabel = qCount ? `${qCount} 題對應` : "純重點（無題庫）";
+      const quizBtn = qCount
+        ? `<button class="btn btn-primary" data-day-quiz="${d.day}" style="font-size:.78rem;padding:.3rem .6rem;">📝 練習測驗</button>`
+        : "";
       card.innerHTML = `
         <div class="pack-level" style="background:${color};">Day ${d.day}</div>
         <div class="pack-subject" style="font-size:.92rem;">${d.title}</div>
-        <div style="font-size:.72rem;color:var(--muted);margin:.3rem 0 .6rem;">${d.content.length} 字 · ${qCount} 題對應</div>
+        <div style="font-size:.72rem;color:var(--muted);margin:.3rem 0 .6rem;">${d.content.length} 字 · ${countLabel}</div>
         <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
           <button class="btn" data-day-read="${d.day}" style="font-size:.78rem;padding:.3rem .6rem;">📖 閱讀</button>
-          <button class="btn btn-primary" data-day-quiz="${d.day}" style="font-size:.78rem;padding:.3rem .6rem;">📝 練習測驗</button>
+          ${quizBtn}
         </div>
       `;
       dayGrid.appendChild(card);
@@ -347,7 +351,7 @@ async function startDayQuiz(day) {
   if (!user) { alert("請先輸入暱稱/編號"); return; }
   const idx = window.DAY_INDEX || {};
   const qids = idx[day] || idx[String(day)] || [];
-  if (!qids.length) { alert(`Day ${day} 沒有對應題目`); return; }
+  if (!qids.length) { alert(`Day ${day} 為純重點複習（尚無對應題庫），請點「📖 閱讀」查看重點整理。`); return; }
 
   await loadAllPacks();
   let questions = qids.map(qid => findQuestionGlobal(qid)?.q).filter(Boolean);
